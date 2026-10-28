@@ -1,7 +1,17 @@
 "use client"
 
-import { Check, Folder, Search, SlidersHorizontal, TriangleAlert, TrendingUp } from "lucide-react"
-import { useState } from "react"
+import {
+  Check,
+  Folder,
+  Search,
+  SlidersHorizontal,
+  TriangleAlert,
+  TrendingUp,
+} from "lucide-react"
+import { useCallback, useEffect, useState } from "react"
+
+import { getProjects, type ProjectCardData } from "@/lib/api/projects"
+import { useLocale } from "@/lib/i18n"
 
 import CreateProjectModal from "@/components/dashboard/CreateProjectModal"
 import ProjectCard from "@/components/dashboard/ProjectCard"
@@ -44,60 +54,134 @@ const stats = [
   },
 ]
 
-const projects = [
-  {
-    projectId: "e-commerce-platform",
-    initials: "EC",
-    title: "E-commerce Platform",
-    description: "A modern storefront with payments, inventory and customer accounts.",
-    status: "On track",
-    statusClassName: "bg-[#E8F8F3] text-[#087F65]",
-    initialsClassName: "bg-[#F0EDFF] text-[#5B50D6]",
-    progress: 68,
-    progressClassName: "bg-[#2AA889]",
-    dueDate: "Oct 24, 2025",
-    completedTasks: 22,
-    totalTasks: 32,
-  },
-  {
-    projectId: "ai-learning-coach",
-    initials: "AI",
-    title: "AI Learning Coach",
-    description: "Personalized AI study plans and adaptive learning recommendations.",
-    status: "Medium risk",
-    statusClassName: "bg-[#FFF4E5] text-[#A65300]",
-    initialsClassName: "bg-[#EAF2FF] text-[#2563EB]",
-    progress: 42,
-    progressClassName: "bg-[#5B50D6]",
-    dueDate: "Nov 18, 2025",
-    completedTasks: 12,
-    totalTasks: 28,
-  },
-  {
-    projectId: "personal-finance-app",
-    initials: "PF",
-    title: "Personal Finance App",
-    description: "Smart budgeting, spending insights and financial goal tracking.",
-    status: "At risk",
-    statusClassName: "bg-[#FFF0F1] text-[#C92A3D]",
-    initialsClassName: "bg-[#E8F8F3] text-[#087F65]",
-    progress: 24,
-    progressClassName: "bg-[#E39A3A]",
-    dueDate: "Dec 12, 2025",
-    completedTasks: 10,
-    totalTasks: 41,
-  },
-]
-
 export default function ProjectsPage() {
+  const { t } = useLocale()
   const [searchTerm, setSearchTerm] = useState("")
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("All")
+
+  const [projects, setProjects] = useState<ProjectCardData[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState("")
+
+  const loadProjects = useCallback(async () => {
+    try {
+      const data = await getProjects()
+      setProjects(data)
+      setError("")
+    } catch (loadError) {
+      setError(
+        loadError instanceof Error
+          ? loadError.message
+          : "Unable to load projects.",
+      )
+    } finally {
+      setIsLoading(false)
+    }
+  }, [])
+
+  useEffect(() => {
+    let isCurrent = true
+
+    getProjects()
+      .then((data) => {
+        if (!isCurrent) return
+        setProjects(data)
+        setError("")
+      })
+      .catch((loadError: unknown) => {
+        if (!isCurrent) return
+        setError(
+          loadError instanceof Error
+            ? loadError.message
+            : "Unable to load projects.",
+        )
+      })
+      .finally(() => {
+        if (isCurrent) setIsLoading(false)
+      })
+
+    return () => {
+      isCurrent = false
+    }
+  }, [])
+
+  if (isLoading) {
+    return (
+      <div className="min-h-full bg-[#F8FAFC] px-3 py-6 sm:px-5 sm:py-8 lg:px-10 lg:py-10">
+        <div role="status" aria-label={t("Loading projects...")} className="animate-pulse">
+          <span className="sr-only">{t("Loading projects...")}</span>
+
+          <header className="flex flex-col justify-between gap-5 md:flex-row">
+            <div className="space-y-3">
+              <div className="h-3 w-24 rounded bg-[#E1E5EC]" />
+              <div className="h-9 w-48 rounded bg-[#E1E5EC]" />
+              <div className="h-4 w-72 max-w-full rounded bg-[#E1E5EC]" />
+            </div>
+            <div className="h-10 w-full rounded-lg bg-[#E1E5EC] md:w-36" />
+          </header>
+
+          <section className="mt-10 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+            {Array.from({ length: 4 }, (_, index) => (
+              <div
+                key={index}
+                className="h-28 rounded-xl border border-[#E1E5EC] bg-white p-5"
+              >
+                <div className="h-3 w-28 rounded bg-[#E1E5EC]" />
+                <div className="mt-4 h-6 w-16 rounded bg-[#E1E5EC]" />
+                <div className="mt-3 h-3 w-32 rounded bg-[#E1E5EC]" />
+              </div>
+            ))}
+          </section>
+
+          <section className="mt-12">
+            <div className="flex flex-col justify-between gap-5 lg:flex-row lg:items-end">
+              <div className="space-y-2">
+                <div className="h-6 w-36 rounded bg-[#E1E5EC]" />
+                <div className="h-4 w-24 rounded bg-[#E1E5EC]" />
+              </div>
+              <div className="flex w-full gap-2 lg:w-auto">
+                <div className="h-12 flex-1 rounded-xl bg-[#E1E5EC] sm:w-72" />
+                <div className="h-12 w-32 rounded-xl bg-[#E1E5EC]" />
+              </div>
+            </div>
+
+            <div className="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+              {Array.from({ length: 3 }, (_, index) => (
+                <div
+                  key={index}
+                  className="h-64 rounded-xl border border-[#E1E5EC] bg-white p-6"
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="size-9 rounded-lg bg-[#E1E5EC]" />
+                    <div className="h-6 w-20 rounded-md bg-[#E1E5EC]" />
+                  </div>
+                  <div className="mt-6 h-5 w-2/3 rounded bg-[#E1E5EC]" />
+                  <div className="mt-3 h-3 w-full rounded bg-[#E1E5EC]" />
+                  <div className="mt-2 h-3 w-4/5 rounded bg-[#E1E5EC]" />
+                  <div className="mt-8 h-3 w-full rounded bg-[#E1E5EC]" />
+                  <div className="mt-3 h-1.5 w-full rounded bg-[#E1E5EC]" />
+                  <div className="mt-7 border-t border-[#EEF0F3] pt-3">
+                    <div className="h-3 w-3/4 rounded bg-[#E1E5EC]" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
+        </div>
+      </div>
+    )
+  }
+
+  if (error) {
+    return <div className="p-10 text-center text-red-600">{t(error)}</div>
+  }
 
   const visibleProjects = projects.filter((project) => {
     const matchesSearch = `${project.title} ${project.description}`
       .toLowerCase()
       .includes(searchTerm.toLowerCase())
-    const matchesStatus = statusFilter === "All" || project.status === statusFilter
+    const matchesStatus =
+      statusFilter === "All" || project.status === statusFilter
 
     return matchesSearch && matchesStatus
   })
@@ -106,13 +190,17 @@ export default function ProjectsPage() {
     <div className="min-h-full px-3 py-6 sm:px-5 sm:py-8 lg:px-10 lg:py-10">
       <header className="flex flex-col items-start justify-between gap-5 md:flex-row md:items-start">
         <div>
-          <p className="text-xs font-semibold tracking-[0.16em] text-[#5B50D6]">WORKSPACE</p>
-          <h1 className="mt-3 text-3xl font-semibold tracking-tight text-[#10233F] md:text-4xl">Projects</h1>
+          <p className="text-xs font-semibold tracking-[0.16em] text-[#5B50D6]">
+            {t("WORKSPACE")}
+          </p>
+          <h1 className="mt-3 text-3xl font-semibold tracking-tight text-[#10233F] md:text-4xl">
+            {t("Projects")}
+          </h1>
           <p className="mt-3 text-sm text-[#607493] md:text-base">
-            Plan, prioritize, and ship your best work.
+            {t("Plan, prioritize, and ship your best work.")}
           </p>
         </div>
-        <CreateProjectModal />
+        <CreateProjectModal onProjectCreated={loadProjects} />
       </header>
 
       <section className="mt-10 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
@@ -124,34 +212,40 @@ export default function ProjectsPage() {
       <section className="mt-12">
         <div className="flex flex-col justify-between gap-5 lg:flex-row lg:items-end">
           <div>
-            <h2 className="text-xl font-semibold tracking-tight text-[#10233F]">All projects</h2>
-            <p className="mt-1.5 text-sm text-[#607493]">{projects.length} active projects</p>
+            <h2 className="text-xl font-semibold tracking-tight text-[#10233F]">
+              {t("All projects")}
+            </h2>
+            <p className="mt-1.5 text-sm text-[#607493]">
+              {t("{count} active projects", { count: projects.length })}
+            </p>
           </div>
 
           <div className="flex w-full flex-col gap-2 sm:flex-row lg:w-auto">
             <label className="relative block min-w-0 flex-1 sm:w-72 lg:flex-none">
-              <Search className="pointer-events-none absolute left-4 top-1/2 size-4 -translate-y-1/2 text-[#8798B3]" />
-              <span className="sr-only">Search projects</span>
+              <Search className="pointer-events-none absolute top-1/2 start-4 size-4 -translate-y-1/2 text-[#8798B3]" />
+              <span className="sr-only">{t("Search projects")}</span>
               <input
                 type="search"
                 value={searchTerm}
                 onChange={(event) => setSearchTerm(event.target.value)}
-                placeholder="Search projects..."
-                className="h-12 w-full rounded-xl border border-[#E1E5EC] bg-white pl-11 pr-4 text-sm text-[#344054] outline-none transition-colors placeholder:text-[#8798B3] focus:border-[#5B50D6] focus:ring-2 focus:ring-[#5B50D6]/15"
+                placeholder={t("Search projects...")}
+                className="h-12 w-full rounded-xl border border-[#E1E5EC] bg-white pe-4 ps-11 text-sm text-[#344054] transition-colors outline-none placeholder:text-[#8798B3] focus:border-[#5B50D6] focus:ring-2 focus:ring-[#5B50D6]/15"
               />
             </label>
             <label className="relative flex h-12 items-center rounded-xl border border-[#E1E5EC] bg-white text-sm text-[#344054] sm:w-32">
-              <SlidersHorizontal className="ml-4 size-4 shrink-0 text-[#607493]" />
-              <span className="sr-only">Filter projects</span>
+              <SlidersHorizontal className="ms-4 size-4 shrink-0 text-[#607493]" />
+              <span className="sr-only">{t("Filter projects")}</span>
               <select
                 value={statusFilter}
-                onChange={(event) => setStatusFilter(event.target.value as StatusFilter)}
+                onChange={(event) =>
+                  setStatusFilter(event.target.value as StatusFilter)
+                }
                 className="h-full w-full appearance-none bg-transparent px-3 outline-none"
               >
-                <option value="All">Filter</option>
-                <option value="On track">On track</option>
-                <option value="Medium risk">Medium risk</option>
-                <option value="At risk">At risk</option>
+                <option value="All">{t("Filter")}</option>
+                <option value="On track">{t("On track")}</option>
+                <option value="Medium risk">{t("Medium risk")}</option>
+                <option value="At risk">{t("At risk")}</option>
               </select>
             </label>
           </div>
@@ -165,7 +259,7 @@ export default function ProjectsPage() {
 
         {visibleProjects.length === 0 && (
           <div className="mt-6 rounded-xl border border-dashed border-[#D5DCE6] bg-white p-10 text-center text-sm text-[#607493]">
-            No projects match your search.
+            {t("No projects match your search.")}
           </div>
         )}
       </section>

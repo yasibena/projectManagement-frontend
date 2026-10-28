@@ -1,4 +1,8 @@
+"use client"
+
 import type { LucideIcon } from "lucide-react"
+
+import { useLocale } from "@/lib/i18n"
 
 type InsightCardProps = {
   category: string
@@ -19,6 +23,8 @@ export default function InsightCard({
   iconClassName,
   iconBackgroundClassName,
 }: InsightCardProps) {
+  const { t } = useLocale()
+
   return (
     <article className="flex h-full flex-col rounded-lg border border-[#E1E5EC] bg-white p-3 shadow-[0_1px_2px_rgba(16,35,63,0.03)] sm:p-4">
       <div className="flex gap-3">
@@ -29,20 +35,20 @@ export default function InsightCard({
         </div>
         <div className="min-w-0">
           <p className="text-[10px] font-semibold tracking-[0.12em] text-[#607493]">
-            {category}
+            {t(category)}
           </p>
           <h3 className="mt-1 text-base font-semibold leading-5 text-[#10233F]">
-            {title}
+            {t(title)}
           </h3>
-          <p className="mt-2 text-xs leading-5 text-[#607493]">{description}</p>
+          <p className="mt-2 text-xs leading-5 text-[#607493]">{t(description)}</p>
         </div>
       </div>
 
       <div className="mt-auto rounded-lg bg-[#F7F8FA] p-3">
         <p className="text-[10px] font-semibold tracking-[0.12em] text-[#5B50D6]">
-          RECOMMENDATION
+          {t("RECOMMENDATION")}
         </p>
-        <p className="mt-1 text-xs leading-5 text-[#344054]">{recommendation}</p>
+        <p className="mt-1 text-xs leading-5 text-[#344054]">{t(recommendation)}</p>
       </div>
     </article>
   )
