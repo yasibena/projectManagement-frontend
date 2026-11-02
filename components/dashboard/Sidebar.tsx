@@ -10,6 +10,8 @@ import {
 } from "lucide-react"
 import Link from "next/link"
 
+import { useLocale } from "@/lib/i18n"
+
 const navigationItems = [
   { label: "Dashboard", icon: LayoutDashboard, href: "/" },
   { label: "Projects", icon: Folder, href: "/projects" },
@@ -24,6 +26,7 @@ const navigationItems = [
 
 export default function Sidebar() {
   const pathname = usePathname()
+  const { t } = useLocale()
 
   return (
     <aside className="hidden w-65 shrink-0 flex-col bg-[#0F172A] px-3 py-6 text-white md:flex">
@@ -51,7 +54,7 @@ export default function Sidebar() {
             }`}
           >
             <Icon className="size-4.5" />
-            <span>{label}</span>
+            <span>{t(label)}</span>
             {badge && (
               <span className="ml-auto rounded bg-[#28294F] px-1.5 py-0.5 text-[10px] font-semibold text-[#BEB9FF]">
                 {badge}
@@ -64,13 +67,15 @@ export default function Sidebar() {
 
       <div className="mt-auto rounded-lg border border-[#2B3A50] bg-[#172337] p-3">
         <div className="flex items-center justify-between text-xs">
-          <span className="text-[#B8C4D8]">AI credits</span>
+          <span className="text-[#B8C4D8]">{t("AI credits")}</span>
           <span className="text-xs font-semibold text-white">18 / 25</span>
         </div>
         <div className="mt-3 h-1 rounded-full bg-[#3A4961]">
           <div className="h-full w-[72%] rounded-full bg-[#5B50D6]" />
         </div>
-        <p className="mt-2 text-xs text-[#70819D]">Resets in 12 days</p>
+        <p className="mt-2 text-xs text-[#70819D]">
+          {t("Resets in {days} days", { days: 12 })}
+        </p>
       </div>
 
       <div className="mt-4 flex items-center gap-3 rounded-lg border border-[#2B3A50] bg-[#172337] p-3">
