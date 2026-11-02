@@ -2,6 +2,7 @@
 
 import { usePathname } from "next/navigation"
 
+import { useAuth } from "@/components/auth/AuthProvider"
 import {
   Folder,
   LayoutDashboard,
@@ -24,6 +25,7 @@ const navigationItems = [
 
 export default function Sidebar() {
   const pathname = usePathname()
+  const { user, logout } = useAuth()
 
   return (
     <aside className="hidden w-65 shrink-0 flex-col bg-[#0F172A] px-3 py-6 text-white md:flex">
@@ -73,14 +75,23 @@ export default function Sidebar() {
         <p className="mt-2 text-xs text-[#70819D]">Resets in 12 days</p>
       </div>
 
-      <div className="mt-4 flex items-center gap-3 rounded-lg border border-[#2B3A50] bg-[#172337] p-3">
-        <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-[#DCD8FF] text-[10px] font-semibold text-[#BEB9FF]">
-          AM
+      <div className="mt-4 rounded-lg border border-[#2B3A50] bg-[#172337] p-3">
+        <div className="flex items-center gap-3">
+          <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-[#DCD8FF] text-[10px] font-semibold text-[#5B50D6]">
+            {user?.email.slice(0, 2).toUpperCase()}
+          </div>
+          <div className="min-w-0">
+            <p className="truncate text-xs font-medium text-white">{user?.email}</p>
+            <p className="truncate text-xs text-[#70819D]">{user?.role}</p>
+          </div>
         </div>
-        <div className="min-w-0">
-          <p className="truncate text-xs font-medium text-white">Alex Morgan</p>
-          <p className="truncate text-xs text-[#70819D]">alex@planwise.dev</p>
-        </div>
+        <button
+          type="button"
+          onClick={() => void logout()}
+          className="mt-3 w-full rounded-md border border-[#3A4961] px-3 py-2 text-left text-xs text-[#B8C4D8] transition-colors hover:bg-white/5 hover:text-white"
+        >
+          Sign out
+        </button>
       </div>
     </aside>
   )
