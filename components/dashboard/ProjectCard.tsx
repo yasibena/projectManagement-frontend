@@ -1,4 +1,7 @@
+"use client"
+
 import { CalendarDays, Check, MoreHorizontal } from "lucide-react"
+import { useLocale } from "@/lib/i18n"
 import Link from "next/link"
 
 type ProjectCardProps = {
@@ -34,6 +37,8 @@ export default function ProjectCard({
   compact = false,
   className = "",
 }: ProjectCardProps) {
+  const { t } = useLocale()
+
   return (
     <article
       className={`${compact ? "rounded-lg p-3 shadow-[0_1px_2px_rgba(16,35,63,0.03)]" : "rounded-xl p-6 shadow-[0_4px_14px_rgba(16,35,63,0.05)]"} border border-[#E1E5EC] bg-white ${className}`}
@@ -47,11 +52,11 @@ export default function ProjectCard({
         <div className="flex items-center gap-3">
           <span className={`rounded-md px-2 py-1 text-[11px] font-medium ${statusClassName}`}>
             <span className="mr-1">●</span>
-            {status}
+            {t(status)}
           </span>
           <Link
             href={`/projects/${projectId}`}
-            aria-label={`Open ${title}`}
+            aria-label={t("Open {title}", { title })}
             className="text-[#607493] transition-colors hover:text-[#10233F]"
           >
             <MoreHorizontal className="size-4" />
@@ -64,17 +69,17 @@ export default function ProjectCard({
           {title}
         </Link>
       </h3>
-      <p className="mt-1.5 min-h-10 text-xs leading-5 text-[#607493]">{description}</p>
+      <p className="mt-1.5 min-h-10 text-xs leading-5 text-[#607493]">{t(description)}</p>
 
       <div className="mt-6">
         <div className="flex items-center justify-between text-xs">
-          <span className="text-[#607493]">Progress</span>
+          <span className="text-[#607493]">{t("Progress")}</span>
           <span className="font-semibold text-[#10233F]">{progress}%</span>
         </div>
         <div
           className="mt-2 h-1.5 rounded-full bg-[#EEF0F3]"
           role="progressbar"
-          aria-label={`${title} progress`}
+          aria-label={t("{title} progress", { title })}
           aria-valuenow={progress}
           aria-valuemin={0}
           aria-valuemax={100}
@@ -89,11 +94,14 @@ export default function ProjectCard({
       <div className="mt-5 flex items-center justify-between border-t border-[#EEF0F3] pt-3 text-[11px] text-[#607493]">
         <span className="flex items-center gap-1.5">
           <CalendarDays className="size-4" />
-          {dueDate}
+          {t(dueDate)}
         </span>
         <span className="flex items-center gap-1.5">
           <Check className="size-4" />
-          {completedTasks}/{totalTasks} tasks
+          {t("{completed}/{total} tasks", {
+            completed: completedTasks,
+            total: totalTasks,
+          })}
         </span>
       </div>
     </article>

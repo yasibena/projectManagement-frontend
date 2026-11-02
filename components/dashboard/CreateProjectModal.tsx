@@ -1,12 +1,24 @@
 "use client"
 
-import { useEffect, useState, type FormEvent } from "react"
+import { useEffect, useRef, useState, type FormEvent } from "react"
 import { CalendarDays, Plus, Sparkles, X } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
+import { createProject } from "@/lib/api/projects"
+import { useLocale } from "@/lib/i18n"
 
-export default function CreateProjectModal() {
+type CreateProjectModalProps = {
+  onProjectCreated?: () => Promise<void>
+}
+
+export default function CreateProjectModal({
+  onProjectCreated = async () => {},
+}: CreateProjectModalProps) {
   const [isOpen, setIsOpen] = useState(false)
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [error, setError] = useState("")
+  const { t } = useLocale()
+  const deadlineInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
     if (!isOpen) {
@@ -27,20 +39,48 @@ export default function CreateProjectModal() {
     setIsOpen(false)
   }
 
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
-    closeModal()
+
+    const formData = new FormData(event.currentTarget)
+    const title = String(formData.get("projectName") ?? "").trim()
+    const description = String(formData.get("projectGoal") ?? "").trim()
+    const deadline = String(formData.get("deadline") ?? "")
+
+    setError("")
+    setIsSubmitting(true)
+
+    try {
+      await createProject({
+        title,
+        ...(description ? { description } : {}),
+        ...(deadline ? { deadline } : {}),
+      })
+      await onProjectCreated()
+      closeModal()
+    } catch (submitError) {
+      setError(
+        submitError instanceof Error
+          ? submitError.message
+          : "Unable to create project.",
+      )
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   return (
     <>
       <Button
         type="button"
-        onClick={() => setIsOpen(true)}
+        onClick={() => {
+          setError("")
+          setIsOpen(true)
+        }}
         className="h-10 w-full rounded-lg bg-[#5B50D6] px-4 text-sm text-white shadow-sm hover:bg-[#4E44C4] md:w-auto"
       >
         <Plus className="size-4" />
-        New Project
+        {t("New Project")}
       </Button>
 
       {isOpen && (
@@ -61,15 +101,15 @@ export default function CreateProjectModal() {
                   id="create-project-title"
                   className="text-xl font-semibold tracking-tight text-[#1F2937]"
                 >
-                  Create a new project
+                  {t("Create a new project")}
                 </h2>
                 <p className="mt-1 text-sm text-[#607493]">
-                  Tell us what you want to build. AI will handle the planning.
+                  {t("Add the project details. You can plan tasks after saving.")}
                 </p>
               </div>
               <button
                 type="button"
-                aria-label="Close create project dialog"
+                aria-label={t("Close create project dialog")}
                 onClick={closeModal}
                 className="rounded-md p-1 text-[#607493] transition-colors hover:bg-[#F7F8FA] hover:text-[#1F2937]"
               >
@@ -84,12 +124,13 @@ export default function CreateProjectModal() {
                     htmlFor="project-name"
                     className="text-sm font-medium text-[#344054]"
                   >
-                    Project name
+                    {t("Project name")}
                   </label>
                   <input
                     id="project-name"
                     name="projectName"
-                    defaultValue="Developer Analytics Dashboard"
+                    required
+                    placeholder={t("Enter a project name")}
                     className="mt-2 h-10 w-full rounded-lg border border-[#D5DCE6] px-4 text-sm text-[#344054] outline-none transition-colors placeholder:text-[#98A2B3] focus:border-[#5B50D6] focus:ring-2 focus:ring-[#5B50D6]/15"
                   />
                 </div>
@@ -99,13 +140,13 @@ export default function CreateProjectModal() {
                     htmlFor="project-goal"
                     className="text-sm font-medium text-[#344054]"
                   >
-                    Project goal
+                    {t("Project goal")}
                   </label>
                   <textarea
                     id="project-goal"
                     name="projectGoal"
                     rows={3}
-                    defaultValue="Build a real-time analytics dashboard that helps engineering teams understand delivery velocity, deployment health, and team workload."
+                    placeholder={t("Describe the project goal (optional)")}
                     className="mt-2 w-full resize-y rounded-lg border border-[#D5DCE6] px-4 py-3 text-sm leading-5 text-[#344054] outline-none transition-colors placeholder:text-[#98A2B3] focus:border-[#5B50D6] focus:ring-2 focus:ring-[#5B50D6]/15"
                   />
                 </div>
@@ -116,36 +157,25 @@ export default function CreateProjectModal() {
                       htmlFor="project-deadline"
                       className="text-sm font-medium text-[#344054]"
                     >
-                      Deadline
+                      {t("Deadline")}
                     </label>
                     <div className="relative mt-2">
-                      <CalendarDays className="pointer-events-none absolute left-4 top-1/2 size-4 -translate-y-1/2 text-[#607493]" />
+                      <button
+                        type="button"
+                        aria-label={t("Open deadline calendar")}
+                        onClick={() => deadlineInputRef.current?.showPicker()}
+                        className="absolute start-3 top-1/2 z-10 -translate-y-1/2 text-[#607493]"
+                      >
+                        <CalendarDays aria-hidden="true" className="size-4" />
+                      </button>
                       <input
+                        ref={deadlineInputRef}
                         id="project-deadline"
                         name="deadline"
                         type="date"
-                        defaultValue="2025-12-18"
-                        className="h-12 w-full rounded-lg border border-[#D5DCE6] pl-11 pr-4 text-sm text-[#344054] outline-none transition-colors focus:border-[#5B50D6] focus:ring-2 focus:ring-[#5B50D6]/15"
+                        className="h-12 w-full rounded-lg border border-[#D5DCE6] ps-11 pe-4 text-sm text-[#344054] outline-none transition-colors focus:border-[#5B50D6] focus:ring-2 focus:ring-[#5B50D6]/15"
                       />
                     </div>
-                  </div>
-
-                  <div>
-                    <div className="flex items-center justify-between">
-                      <label
-                        htmlFor="technology-stack"
-                        className="text-sm font-medium text-[#344054]"
-                      >
-                        Technology stack
-                      </label>
-                      <span className="text-sm text-[#98A2B3]">Optional</span>
-                    </div>
-                    <input
-                      id="technology-stack"
-                      name="technologyStack"
-                      defaultValue="Next.js, TypeScript, PostgreSQL"
-                      className="mt-2 h-10 w-full rounded-lg border border-[#D5DCE6] px-4 text-sm text-[#344054] outline-none transition-colors placeholder:text-[#98A2B3] focus:border-[#5B50D6] focus:ring-2 focus:ring-[#5B50D6]/15"
-                    />
                   </div>
                 </div>
 
@@ -155,15 +185,18 @@ export default function CreateProjectModal() {
                   </div>
                   <div>
                     <h3 className="text-sm font-semibold text-[#4138A8]">
-                      Plan smarter with AI
+                      {t("Project planning")}
                     </h3>
                     <p className="mt-1 text-sm leading-5 text-[#746FB4]">
-                      AI will analyze your goal and create milestones and tasks
-                      for your project. You can review and edit everything before
-                      saving.
+                      {t("This form saves the project name, goal, and optional deadline. You can add milestones and tasks afterward.")}
                     </p>
                   </div>
                 </div>
+                {error && (
+                  <p role="alert" className="text-sm text-red-600">
+                    {error}
+                  </p>
+                )}
               </div>
 
               <div className="flex flex-col-reverse gap-2 border-t border-[#E1E5EC] px-5 py-4 sm:flex-row sm:justify-end sm:px-6">
@@ -171,16 +204,18 @@ export default function CreateProjectModal() {
                   type="button"
                   variant="outline"
                   onClick={closeModal}
+                  disabled={isSubmitting}
                   className="h-10 rounded-lg px-5 text-sm"
                 >
-                  Cancel
+                  {t("Cancel")}
                 </Button>
                 <Button
                   type="submit"
-                  className="h-10 rounded-lg bg-[#5B50D6] px-5 text-sm text-white hover:bg-[#4E44C4]"
+                  disabled={isSubmitting}
+                  className="h-10 rounded-lg bg-[#5B50D6] px-5 text-sm text-white hover:bg-[#4E44C4] disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   <Sparkles className="size-4" />
-                  Generate Plan with AI
+                  {isSubmitting ? t("Creating...") : t("Create Project")}
                 </Button>
               </div>
             </form>
