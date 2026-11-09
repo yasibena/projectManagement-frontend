@@ -1,10 +1,14 @@
 "use client"
 
+import { useAuth } from "@/components/auth/AuthProvider"
 import { Button } from "@/components/ui/button"
 import { useLocale } from "@/lib/i18n"
 
 export default function SettingsPage() {
   const { t } = useLocale()
+  const { user } = useAuth()
+  const email = user?.email ?? ""
+  const initials = email.slice(0, 2).toUpperCase() || "??"
 
   return (
     <div className="min-h-full px-4 py-8 sm:px-6 lg:px-10 lg:py-10">
@@ -22,11 +26,11 @@ export default function SettingsPage() {
           <div className="mt-7 flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex items-center gap-4">
               <div className="flex size-15 items-center justify-center rounded-full bg-[#DCD8FF] text-sm font-semibold text-[#5B50D6]">
-                AM
+                {initials}
               </div>
               <div>
-                <p className="text-base font-semibold text-[#10233F]">Alex Morgan</p>
-                <p className="mt-1 text-sm text-[#607493]">alex@planwise.dev</p>
+                <p className="text-base font-semibold text-[#10233F]">{email}</p>
+                <p className="mt-1 text-sm text-[#607493]">{user?.role ?? "user"}</p>
               </div>
             </div>
             <Button type="button" variant="outline" className="h-12 rounded-xl px-5 text-sm">
