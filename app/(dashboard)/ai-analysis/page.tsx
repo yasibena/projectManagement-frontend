@@ -1,5 +1,6 @@
 "use client"
 
+import { useCallback, useEffect, useState } from "react"
 import {
   CalendarDays,
   Clock3,
@@ -15,86 +16,103 @@ import Link from "next/link"
 import InsightCard from "@/components/dashboard/InsightCard"
 import StatCard from "@/components/dashboard/StatCard"
 import { Button } from "@/components/ui/button"
+import { getAiAnalysis, type AiAnalysis } from "@/lib/api/ai-analysis"
 import { useLocale } from "@/lib/i18n"
 
-const insights = [
-  {
-    category: "CRITICAL BOTTLENECK",
-    title: "Authentication is blocking 4 other tasks",
-    description:
-      "Checkout, user profiles, order history, and saved payments cannot begin until authentication is complete.",
-    recommendation: "Complete authentication before starting checkout integration.",
-    icon: TriangleAlert,
-    iconClassName: "text-[#D92D45]",
-    iconBackgroundClassName: "bg-[#FFF0F1]",
-  },
-  {
-    category: "SCHEDULE RISK",
-    title: "Payments milestone may slip by 6 days",
-    description:
-      "The current task velocity suggests the payments milestone will miss its planned completion date.",
-    recommendation: "Move one developer to the checkout flow this week.",
-    icon: Clock3,
-    iconClassName: "text-[#C66A00]",
-    iconBackgroundClassName: "bg-[#FFF4E5]",
-  },
-  {
-    category: "RECOMMENDED NEXT ACTION",
-    title: "Prioritize database integration",
-    description:
-      "Completing the database connection now unlocks the highest number of downstream tasks.",
-    recommendation: "Schedule a focused 2-hour integration session.",
-    icon: Zap,
-    iconClassName: "text-[#2563EB]",
-    iconBackgroundClassName: "bg-[#EAF2FF]",
-  },
-]
+function getInsightPresentation(type: string) {
+  if (type === "error" || type === "critical") {
+    return {
+      category: "CRITICAL INSIGHT",
+      icon: TriangleAlert,
+      iconClassName: "text-[#D92D45]",
+      iconBackgroundClassName: "bg-[#FFF0F1]",
+    }
+  }
 
-const metrics = [
-  {
-    label: "Overall progress",
-    value: "68%",
-    description: "22 of 32 tasks",
-    icon: TrendingUp,
+  if (type === "warning") {
+    return {
+      category: "SCHEDULE RISK",
+      icon: Clock3,
+      iconClassName: "text-[#C66A00]",
+      iconBackgroundClassName: "bg-[#FFF4E5]",
+    }
+  }
+
+  return {
+    category: "RECOMMENDED NEXT ACTION",
+    icon: Zap,
     iconClassName: "text-[#2563EB]",
     iconBackgroundClassName: "bg-[#EAF2FF]",
-  },
-  {
-    label: "Remaining work",
-    value: "10 tasks",
-    description: "Est. 46 hours",
-    icon: ListTodo,
-    iconClassName: "text-[#5B50D6]",
-    iconBackgroundClassName: "bg-[#F0EDFF]",
-  },
-  {
-    label: "Deadline risk",
-    value: "6 days",
-    description: "Potential delay",
-    icon: CalendarDays,
-    iconClassName: "text-[#C66A00]",
-    iconBackgroundClassName: "bg-[#FFF4E5]",
-  },
-  {
-    label: "Blocked tasks",
-    value: "4",
-    description: "1 critical blocker",
-    icon: TriangleAlert,
-    iconClassName: "text-[#D92D45]",
-    iconBackgroundClassName: "bg-[#FFF0F1]",
-  },
-  {
-    label: "Critical tasks",
-    value: "3",
-    description: "Need attention",
-    icon: Zap,
-    iconClassName: "text-[#C66A00]",
-    iconBackgroundClassName: "bg-[#FFF4E5]",
-  },
-]
+  }
+}
 
 export default function AiAnalysisPage() {
   const { t } = useLocale()
+  const [analysis, setAnalysis] = useState<AiAnalysis | null>(null)
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState("")
+
+  const loadAnalysis = useCallback(() => {
+    setIsLoading(true)
+    setError("")
+
+    getAiAnalysis()
+      .then(setAnalysis)
+      .catch((loadError: unknown) => {
+        setError(loadError instanceof Error ? loadError.message : "Unable to load AI analysis.")
+      })
+      .finally(() => setIsLoading(false))
+  }, [])
+
+  useEffect(() => {
+    let isCurrent = true
+
+    getAiAnalysis()
+      .then((data) => {
+        if (isCurrent) setAnalysis(data)
+      })
+      .catch((loadError: unknown) => {
+        if (isCurrent) {
+          setError(loadError instanceof Error ? loadError.message : "Unable to load AI analysis.")
+        }
+      })
+      .finally(() => {
+        if (isCurrent) setIsLoading(false)
+      })
+
+    return () => {
+      isCurrent = false
+    }
+  }, [])
+
+  const metrics = analysis
+    ? [
+        {
+          label: "Projects analyzed",
+          value: String(analysis.projectsCount),
+          description: "Current workspace",
+          icon: TrendingUp,
+          iconClassName: "text-[#2563EB]",
+          iconBackgroundClassName: "bg-[#EAF2FF]",
+        },
+        {
+          label: "Total tasks",
+          value: String(analysis.tasksCount),
+          description: "Across all projects",
+          icon: ListTodo,
+          iconClassName: "text-[#5B50D6]",
+          iconBackgroundClassName: "bg-[#F0EDFF]",
+        },
+        {
+          label: "Overdue tasks",
+          value: String(analysis.overdueCount),
+          description: "Need attention",
+          icon: CalendarDays,
+          iconClassName: "text-[#C66A00]",
+          iconBackgroundClassName: "bg-[#FFF4E5]",
+        },
+      ]
+    : []
 
   return (
     <div className="min-h-full px-3 py-5 sm:px-4 sm:py-6 lg:px-8 lg:py-8">
@@ -111,9 +129,13 @@ export default function AiAnalysisPage() {
           </p>
         </div>
 
-        <Button className="h-9 w-full rounded-lg bg-[#5B50D6] px-3 text-xs text-white hover:bg-[#4E44C4] md:w-auto">
-          <RefreshCw className="size-3.5" />
-          {t("Run Analysis")}
+        <Button
+          onClick={loadAnalysis}
+          disabled={isLoading}
+          className="h-9 w-full rounded-lg bg-[#5B50D6] px-3 text-xs text-white hover:bg-[#4E44C4] md:w-auto"
+        >
+          <RefreshCw className={`size-3.5 ${isLoading ? "animate-spin" : ""}`} />
+          {isLoading ? t("Loading...") : t("Run Analysis")}
         </Button>
       </header>
 
@@ -160,7 +182,13 @@ export default function AiAnalysisPage() {
         </div>
       </section>
 
-      <section className="mt-4 grid gap-2 sm:grid-cols-2 xl:grid-cols-5">
+      {error && (
+        <p role="alert" className="mt-4 rounded-lg bg-[#FFF0F1] p-3 text-sm text-[#D92D45]">
+          {t(error)}
+        </p>
+      )}
+
+      <section className="mt-4 grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
         {metrics.map((metric) => (
           <StatCard key={metric.label} {...metric} />
         ))}
@@ -178,13 +206,28 @@ export default function AiAnalysisPage() {
           </div>
           <span className="hidden items-center gap-1 rounded-md bg-[#F0EDFF] px-2 py-1 text-[11px] font-medium text-[#5B50D6] sm:flex">
             <Sparkles className="size-3" />
-            {t("3 insights")}
+            {t("{count} insights", { count: analysis?.insights.length ?? 0 })}
           </span>
         </div>
         <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-          {insights.map((insight) => (
-            <InsightCard key={insight.title} {...insight} />
-          ))}
+          {isLoading ? (
+            <p className="text-sm text-[#607493]">{t("Loading...")}</p>
+          ) : analysis?.insights.length ? (
+            analysis.insights.map((insight, index) => {
+              const presentation = getInsightPresentation(insight.type)
+              return (
+                <InsightCard
+                  key={`${insight.type}-${index}`}
+                  {...presentation}
+                  title={insight.message}
+                  description={insight.message}
+                  recommendation={insight.message}
+                />
+              )
+            })
+          ) : (
+            <p className="text-sm text-[#607493]">{t("No insights available.")}</p>
+          )}
         </div>
       </section>
     </div>
