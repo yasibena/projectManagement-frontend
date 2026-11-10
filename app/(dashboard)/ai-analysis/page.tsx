@@ -46,6 +46,33 @@ function getInsightPresentation(type: string) {
   }
 }
 
+function getHealthPresentation(risk: AiAnalysis["health"]["risk"]) {
+  switch (risk) {
+    case "at_risk":
+      return {
+        badgeClassName: "bg-[#FFF0F1] text-[#D92D45]",
+        badgeLabel: "At risk",
+        ring: "conic-gradient(#D92D45 0deg 230deg, #F2E6D2 230deg 360deg)",
+        scoreClassName: "text-[#D92D45]",
+      }
+    case "medium_risk":
+      return {
+        badgeClassName: "bg-[#FFF4E5] text-[#A65300]",
+        badgeLabel: "Medium risk",
+        ring: "conic-gradient(#E38B1D 0deg 230deg, #F2E6D2 230deg 360deg)",
+        scoreClassName: "text-[#E38B1D]",
+      }
+    case "on_track":
+    default:
+      return {
+        badgeClassName: "bg-[#E8F8F3] text-[#087F65]",
+        badgeLabel: "On track",
+        ring: "conic-gradient(#2AA889 0deg 230deg, #F2E6D2 230deg 360deg)",
+        scoreClassName: "text-[#2AA889]",
+      }
+  }
+}
+
 function AiAnalysisSkeleton({ label }: { label: string }) {
   return (
     <div
@@ -191,44 +218,63 @@ export default function AiAnalysisPage() {
 
       <section className="mt-6 rounded-lg border border-[#F0D9AC] bg-[#FFFCF6] p-4 shadow-[0_1px_2px_rgba(16,35,63,0.03)] sm:p-5">
         <div className="flex flex-col items-start gap-4 lg:flex-row lg:items-center">
-          <div
-            className="relative flex size-24 shrink-0 -rotate-90 items-center justify-center rounded-full"
-            style={{
-              background:
-                "conic-gradient(#E38B1D 0deg 230deg, #F2E6D2 230deg 360deg)",
-            }}
-          >
-            <div className="flex size-17 rotate-90 flex-col items-center justify-center rounded-full bg-[#FFFCF6]">
-              <span className="text-2xl font-semibold leading-none text-[#10233F]">
-                64
-              </span>
-              <span className="mt-0.5 text-[9px] text-[#607493]">{t("Health score")}</span>
-            </div>
-          </div>
+          {analysis?.health ? (
+            <>
+              <div
+                className="relative flex size-24 shrink-0 -rotate-90 items-center justify-center rounded-full"
+                style={{ background: getHealthPresentation(analysis.health.risk).ring }}
+              >
+                <div className="flex size-17 rotate-90 flex-col items-center justify-center rounded-full bg-[#FFFCF6]">
+                  <span className={`text-2xl font-semibold leading-none ${getHealthPresentation(analysis.health.risk).scoreClassName}`}>
+                    {analysis.health.score}
+                  </span>
+                  <span className="mt-0.5 text-[9px] text-[#607493]">{t("Health score")}</span>
+                </div>
+              </div>
 
-          <div className="min-w-0 flex-1">
-            <span className="inline-flex rounded-md bg-[#FFF4E5] px-2 py-1 text-[11px] font-medium text-[#A65300]">
-              {t("Medium risk")}
-            </span>
-            <h2 className="mt-3 text-xl font-semibold tracking-tight text-[#10233F]">
-              {t("Project Health: Medium Risk")}
-            </h2>
-            <p className="mt-1.5 text-xs leading-5 text-[#607493]">
-              {t("Your project is making steady progress, but one critical dependency is putting the delivery timeline at risk.")}
-            </p>
-            <Link
-              href="#"
-              className="mt-4 inline-flex items-center gap-2 text-xs font-medium text-[#5B50D6] hover:text-[#4138A8]"
-            >
-              {t("View project board")}
-              <span aria-hidden="true">→</span>
-            </Link>
-          </div>
+              <div className="min-w-0 flex-1">
+                <span className={`inline-flex rounded-md px-2 py-1 text-[11px] font-medium ${getHealthPresentation(analysis.health.risk).badgeClassName}`}>
+                  {t(getHealthPresentation(analysis.health.risk).badgeLabel)}
+                </span>
+                <h2 className="mt-3 text-xl font-semibold tracking-tight text-[#10233F]">
+                  {analysis.health.title}
+                </h2>
+                <p className="mt-1.5 text-xs leading-5 text-[#607493]">{analysis.health.message}</p>
+                {analysis.health.projectId && (
+                  <Link
+                    href={`/projects/${encodeURIComponent(analysis.health.projectId)}`}
+                    className="mt-4 inline-flex items-center gap-2 text-xs font-medium text-[#5B50D6] hover:text-[#4138A8]"
+                  >
+                    {t("View project board")}
+                    <span aria-hidden="true">→</span>
+                  </Link>
+                )}
+              </div>
 
-          <div className="flex items-center gap-1.5 text-[11px] text-[#8798B3] lg:self-start">
-            <Clock3 className="size-4" />
-            {t("Analyzed 2 min ago")}
-          </div>
+              <div className="flex items-center gap-1.5 text-[11px] text-[#8798B3] lg:self-start">
+                <Clock3 className="size-4" />
+                {t("Analyzed just now")}
+              </div>
+            </>
+          ) : (
+            <>
+              <div
+                className="relative flex size-24 shrink-0 -rotate-90 items-center justify-center rounded-full"
+                style={{ background: "conic-gradient(#E38B1D 0deg 230deg, #F2E6D2 230deg 360deg)" }}
+              >
+                <div className="flex size-17 rotate-90 flex-col items-center justify-center rounded-full bg-[#F2E6D2]" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <div className="h-5 w-24 rounded bg-[#F2E6D2]" />
+                <div className="mt-3 h-6 w-64 max-w-full rounded bg-[#E1E5EC]" />
+                <div className="mt-3 h-4 w-full rounded bg-[#E1E5EC]" />
+              </div>
+              <div className="flex items-center gap-1.5 text-[11px] text-[#8798B3] lg:self-start">
+                <Clock3 className="size-4" />
+                <span className="h-4 w-20 rounded bg-[#E1E5EC]" />
+              </div>
+            </>
+          )}
         </div>
       </section>
 

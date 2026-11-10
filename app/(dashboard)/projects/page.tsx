@@ -10,7 +10,8 @@ import {
 } from "lucide-react"
 import { useCallback, useEffect, useState } from "react"
 
-import { getProjects, type ProjectCardData } from "@/lib/api/projects"
+import { getDashboard, type DashboardSummary } from "@/lib/api/dashboard"
+import { toProjectCard, type ProjectCardData } from "@/lib/api/projects"
 import { useLocale } from "@/lib/i18n"
 
 import CreateProjectModal from "@/components/dashboard/CreateProjectModal"
@@ -19,54 +20,21 @@ import StatCard from "@/components/dashboard/StatCard"
 
 type StatusFilter = "All" | "On track" | "Medium risk" | "At risk"
 
-const stats = [
-  {
-    label: "Active projects",
-    value: "3",
-    description: "+1 this month",
-    icon: Folder,
-    iconClassName: "text-[#2563EB]",
-    iconBackgroundClassName: "bg-[#EAF2FF]",
-  },
-  {
-    label: "Tasks completed",
-    value: "44",
-    description: "72% completion rate",
-    icon: Check,
-    iconClassName: "text-[#159B7B]",
-    iconBackgroundClassName: "bg-[#E8F8F3]",
-  },
-  {
-    label: "Overall progress",
-    value: "48%",
-    description: "+8% this week",
-    icon: TrendingUp,
-    iconClassName: "text-[#5B50D6]",
-    iconBackgroundClassName: "bg-[#F0EDFF]",
-  },
-  {
-    label: "Projects at risk",
-    value: "1",
-    description: "Needs your attention",
-    icon: TriangleAlert,
-    iconClassName: "text-[#C66A00]",
-    iconBackgroundClassName: "bg-[#FFF4E5]",
-  },
-]
-
 export default function ProjectsPage() {
   const { t } = useLocale()
   const [searchTerm, setSearchTerm] = useState("")
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("All")
 
   const [projects, setProjects] = useState<ProjectCardData[]>([])
+  const [dashboard, setDashboard] = useState<DashboardSummary | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState("")
 
   const loadProjects = useCallback(async () => {
     try {
-      const data = await getProjects()
-      setProjects(data)
+      const dashboardData = await getDashboard()
+      setProjects(dashboardData.projects.map(toProjectCard))
+      setDashboard(dashboardData)
       setError("")
     } catch (loadError) {
       setError(
@@ -82,10 +50,11 @@ export default function ProjectsPage() {
   useEffect(() => {
     let isCurrent = true
 
-    getProjects()
-      .then((data) => {
+    getDashboard()
+      .then((dashboardData) => {
         if (!isCurrent) return
-        setProjects(data)
+        setProjects(dashboardData.projects.map(toProjectCard))
+        setDashboard(dashboardData)
         setError("")
       })
       .catch((loadError: unknown) => {
@@ -172,9 +141,44 @@ export default function ProjectsPage() {
     )
   }
 
-  if (error) {
-    return <div className="p-10 text-center text-red-600">{t(error)}</div>
+  if (error || !dashboard) {
+    return <div className="p-10 text-center text-red-600">{t(error || "Unable to load dashboard.")}</div>
   }
+
+  const stats = [
+    {
+      label: "Active projects",
+      value: String(dashboard.activeProjects),
+      description: t("Current projects in your workspace"),
+      icon: Folder,
+      iconClassName: "text-[#2563EB]",
+      iconBackgroundClassName: "bg-[#EAF2FF]",
+    },
+    {
+      label: "Tasks completed",
+      value: String(dashboard.completedTasks),
+      description: t("Completed across all projects"),
+      icon: Check,
+      iconClassName: "text-[#159B7B]",
+      iconBackgroundClassName: "bg-[#E8F8F3]",
+    },
+    {
+      label: "Overall progress",
+      value: `${dashboard.overallProgress}%`,
+      description: t("Based on completed tasks"),
+      icon: TrendingUp,
+      iconClassName: "text-[#5B50D6]",
+      iconBackgroundClassName: "bg-[#F0EDFF]",
+    },
+    {
+      label: "Projects at risk",
+      value: String(dashboard.needsAttention),
+      description: t("Projects past their deadline"),
+      icon: TriangleAlert,
+      iconClassName: "text-[#C66A00]",
+      iconBackgroundClassName: "bg-[#FFF4E5]",
+    },
+  ]
 
   const visibleProjects = projects.filter((project) => {
     const matchesSearch = `${project.title} ${project.description}`
