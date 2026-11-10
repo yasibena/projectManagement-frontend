@@ -46,6 +46,52 @@ function getInsightPresentation(type: string) {
   }
 }
 
+function AiAnalysisSkeleton({ label }: { label: string }) {
+  return (
+    <div
+      role="status"
+      aria-label={label}
+      className="min-h-full animate-pulse px-3 py-5 sm:px-4 sm:py-6 lg:px-8 lg:py-8"
+    >
+      <span className="sr-only">{label}</span>
+      <div className="flex flex-col justify-between gap-4 md:flex-row">
+        <div className="w-full max-w-xl">
+          <div className="h-3 w-24 rounded bg-[#E1E5EC]" />
+          <div className="mt-4 h-10 w-64 rounded bg-[#E1E5EC]" />
+          <div className="mt-4 h-4 w-full max-w-md rounded bg-[#E1E5EC]" />
+        </div>
+        <div className="h-9 w-full rounded-lg bg-[#E1E5EC] md:w-32" />
+      </div>
+
+      <div className="mt-6 flex flex-col gap-4 rounded-lg border border-[#F0D9AC] bg-[#FFFCF6] p-5 sm:flex-row sm:items-center">
+        <div className="size-24 shrink-0 rounded-full bg-[#F2E6D2]" />
+        <div className="flex-1">
+          <div className="h-5 w-24 rounded bg-[#F2E6D2]" />
+          <div className="mt-3 h-6 w-64 max-w-full rounded bg-[#E1E5EC]" />
+          <div className="mt-3 h-4 w-full rounded bg-[#E1E5EC]" />
+          <div className="mt-4 h-4 w-32 rounded bg-[#E1E5EC]" />
+        </div>
+      </div>
+
+      <div className="mt-4 grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
+        {Array.from({ length: 3 }, (_, index) => (
+          <div key={index} className="h-28 rounded-lg border border-[#E1E5EC] bg-white" />
+        ))}
+      </div>
+
+      <div className="mt-6">
+        <div className="h-6 w-32 rounded bg-[#E1E5EC]" />
+        <div className="mt-2 h-4 w-72 max-w-full rounded bg-[#E1E5EC]" />
+        <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+          {Array.from({ length: 3 }, (_, index) => (
+            <div key={index} className="h-52 rounded-lg border border-[#E1E5EC] bg-white" />
+          ))}
+        </div>
+      </div>
+    </div>
+  )
+}
+
 export default function AiAnalysisPage() {
   const { t } = useLocale()
   const [analysis, setAnalysis] = useState<AiAnalysis | null>(null)
@@ -84,6 +130,10 @@ export default function AiAnalysisPage() {
       isCurrent = false
     }
   }, [])
+
+  if (isLoading && !analysis) {
+    return <AiAnalysisSkeleton label={t("Loading AI analysis...")} />
+  }
 
   const metrics = analysis
     ? [
