@@ -1,7 +1,7 @@
 "use client"
 
 import { Plus, Trash2, X } from "lucide-react"
-import { useCallback, useEffect, useState, type FormEvent } from "react"
+import { useCallback, useEffect, useState, type DragEvent, type FormEvent } from "react"
 
 import { Button } from "@/components/ui/button"
 import { useLocale } from "@/lib/i18n"
@@ -9,6 +9,7 @@ import {
   createTask,
   deleteTask,
   getTasksByProject,
+  updateTask,
   type ApiTask,
   type TaskPriority,
   type TaskStatus,
@@ -59,15 +60,25 @@ function TaskCard({
   task,
   isDeleting,
   onDelete,
+  onDragStart,
+  onDragEnd,
 }: {
   task: Task
   isDeleting: boolean
   onDelete: (task: Task) => void
+  onDragStart: (task: Task, event: DragEvent<HTMLElement>) => void
+  onDragEnd: () => void
 }) {
   const { t } = useLocale()
 
   return (
-    <article className="rounded-lg border border-[#E1E5EC] bg-white p-3 shadow-[0_1px_2px_rgba(16,35,63,0.03)]">
+    <article
+      draggable={!isDeleting}
+      onDragStart={(event) => onDragStart(task, event)}
+      onDragEnd={onDragEnd}
+      aria-label={t("Drag {title} to move it", { title: task.title })}
+      className="rounded-lg border border-[#E1E5EC] bg-white p-3 shadow-[0_1px_2px_rgba(16,35,63,0.03)]"
+    >
       <div className="flex items-center justify-between gap-3">
         <span className={`rounded-md px-2 py-1 text-[11px] font-medium ${priorityClasses[task.priority]}`}>
           {t(task.priority)}
@@ -94,6 +105,9 @@ function TaskColumn({
   onAddTask,
   onDeleteTask,
   deletingTaskId,
+  onDragStart,
+  onDragEnd,
+  onDrop,
   dotClassName,
 }: {
   columnId: ColumnId
@@ -101,13 +115,23 @@ function TaskColumn({
   onAddTask: (columnId: ColumnId) => void
   onDeleteTask: (task: Task) => void
   deletingTaskId: string | null
+  onDragStart: (task: Task, event: DragEvent<HTMLElement>) => void
+  onDragEnd: () => void
+  onDrop: (columnId: ColumnId) => void
   dotClassName: string
 }) {
   const { t } = useLocale()
   const title = t(columnLabels[columnId])
 
   return (
-    <section className="rounded-xl bg-[#F0F2F5] p-3">
+    <section
+      onDragOver={(event) => event.preventDefault()}
+      onDrop={(event) => {
+        event.preventDefault()
+        onDrop(columnId)
+      }}
+      className="rounded-xl bg-[#F0F2F5] p-3 transition-colors [&:has(article)]:hover:bg-[#EAECF1]"
+    >
       <div className="flex items-center justify-between px-1 py-2">
         <h2 className="flex items-center gap-2 text-sm font-semibold text-[#10233F]">
           <span className={`size-2 rounded-full ${dotClassName}`} />
@@ -132,6 +156,8 @@ function TaskColumn({
             task={task}
             isDeleting={deletingTaskId === task.id}
             onDelete={onDeleteTask}
+            onDragStart={onDragStart}
+            onDragEnd={onDragEnd}
           />
         ))}
       </div>
@@ -164,6 +190,7 @@ export default function TaskBoard({
   const [priority, setPriority] = useState<Priority>("Medium")
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [deletingTaskId, setDeletingTaskId] = useState<string | null>(null)
+  const [movingTaskId, setMovingTaskId] = useState<string | null>(null)
 
   useEffect(() => {
     let isCurrent = true
@@ -236,6 +263,40 @@ export default function TaskBoard({
     }
   }
 
+  function startDragging(task: Task, event: DragEvent<HTMLElement>) {
+    setMovingTaskId(task.id)
+    // Use the card itself as the drag preview so the browser does not invent a different style.
+    event.dataTransfer.effectAllowed = "move"
+    event.dataTransfer.setDragImage(event.currentTarget, event.nativeEvent.offsetX, event.nativeEvent.offsetY)
+  }
+
+  function moveTask(columnId: ColumnId) {
+    if (!movingTaskId) return
+
+    const nextStatus = columnStatuses[columnId]
+    const currentTask = tasks.find((task) => task.id === movingTaskId)
+    if (!currentTask || currentTask.status === nextStatus) {
+      setMovingTaskId(null)
+      return
+    }
+
+    const previousStatus = currentTask.status
+    setTasks((currentTasks) =>
+      currentTasks.map((task) => (task.id === movingTaskId ? { ...task, status: nextStatus } : task)),
+    )
+    setError("")
+
+    updateTask(movingTaskId, { status: nextStatus })
+      .then(() => onTasksChanged?.())
+      .catch((moveError: unknown) => {
+        setTasks((currentTasks) =>
+          currentTasks.map((task) => (task.id === movingTaskId ? { ...task, status: previousStatus } : task)),
+        )
+        setError(moveError instanceof Error ? moveError.message : "Unable to move task.")
+      })
+      .finally(() => setMovingTaskId(null))
+  }
+
   const columns: { id: ColumnId; dotClassName: string }[] = [
     { id: "todo", dotClassName: "bg-[#98A2B3]" },
     { id: "inProgress", dotClassName: "bg-[#4387E5]" },
@@ -281,6 +342,9 @@ export default function TaskBoard({
               onAddTask={setOpenColumn}
               onDeleteTask={removeTask}
               deletingTaskId={deletingTaskId}
+              onDragStart={startDragging}
+              onDragEnd={() => setMovingTaskId(null)}
+              onDrop={moveTask}
               dotClassName={dotClassName}
             />
           ))}

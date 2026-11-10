@@ -47,6 +47,13 @@ export function createTask(data: CreateTaskInput): Promise<ApiTask> {
   })
 }
 
+export function updateTask(id: string, data: { status?: TaskStatus }): Promise<ApiTask> {
+  return request<ApiTask>(`/tasks/${encodeURIComponent(id)}`, {
+    method: "PATCH",
+    body: JSON.stringify(data),
+  })
+}
+
 export function deleteTask(id: string): Promise<{ message: string }> {
   return request<{ message: string }>(`/tasks/${encodeURIComponent(id)}`, {
     method: "DELETE",
