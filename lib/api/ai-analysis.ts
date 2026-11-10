@@ -10,8 +10,17 @@ export type HealthData = {
   projectId: string | null
 }
 
+export type AiInsight = {
+  type: string
+  message: string
+}
+
 export type AiAnalysis = {
+  projectsCount: number
+  tasksCount: number
+  overdueCount: number
   health: HealthData
+  insights: AiInsight[]
 }
 
 export function getAiAnalysis(): Promise<AiAnalysis> {
