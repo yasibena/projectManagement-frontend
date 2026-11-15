@@ -239,7 +239,9 @@ export default function AiAnalysisPage() {
                 <h2 className="mt-3 text-xl font-semibold tracking-tight text-[#10233F]">
                   {analysis.health.title}
                 </h2>
-                <p className="mt-1.5 text-xs leading-5 text-[#607493]">{analysis.health.message}</p>
+                <p className="mt-1.5 whitespace-pre-line text-xs leading-5 text-[#607493]">
+                  {analysis.health.message}
+                </p>
                 {analysis.health.projectId && (
                   <Link
                     href={`/projects/${encodeURIComponent(analysis.health.projectId)}`}
@@ -311,13 +313,16 @@ export default function AiAnalysisPage() {
           ) : analysis?.insights.length ? (
             analysis.insights.map((insight, index) => {
               const presentation = getInsightPresentation(insight.type)
+              const title = insight.title || insight.description
+              const description = insight.description || title
+
               return (
                 <InsightCard
                   key={`${insight.type}-${index}`}
                   {...presentation}
-                  title={insight.message}
-                  description={insight.message}
-                  recommendation={insight.message}
+                  title={title}
+                  description={description}
+                  recommendation={insight.recommendation}
                 />
               )
             })

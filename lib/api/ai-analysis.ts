@@ -12,7 +12,9 @@ export type HealthData = {
 
 export type AiInsight = {
   type: string
-  message: string
+  title: string
+  description: string
+  recommendation: string
 }
 
 export type AiAnalysis = {

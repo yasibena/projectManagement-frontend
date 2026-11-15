@@ -8,7 +8,7 @@ type InsightCardProps = {
   category: string
   title: string
   description: string
-  recommendation: string
+  recommendation?: string
   icon: LucideIcon
   iconClassName: string
   iconBackgroundClassName: string
@@ -44,12 +44,14 @@ export default function InsightCard({
         </div>
       </div>
 
-      <div className="mt-auto rounded-lg bg-[#F7F8FA] p-3">
-        <p className="text-[10px] font-semibold tracking-[0.12em] text-[#5B50D6]">
-          {t("RECOMMENDATION")}
-        </p>
-        <p className="mt-1 text-xs leading-5 text-[#344054]">{t(recommendation)}</p>
-      </div>
+      {recommendation ? (
+        <div className="mt-auto rounded-lg bg-[#F7F8FA] p-3">
+          <p className="text-[10px] font-semibold tracking-[0.12em] text-[#5B50D6]">
+            {t("RECOMMENDATION")}
+          </p>
+          <p className="mt-1 text-xs leading-5 text-[#344054]">{t(recommendation)}</p>
+        </div>
+      ) : null}
     </article>
   )
 }
