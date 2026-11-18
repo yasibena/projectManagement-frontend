@@ -7,6 +7,7 @@ import {
   Folder,
   LayoutDashboard,
   Settings,
+  ShieldCheck,
   Sparkles,
 } from "lucide-react"
 import Link from "next/link"
@@ -23,6 +24,7 @@ const navigationItems = [
     badge: "AI",
   },
   { label: "Settings", icon: Settings, href: "/settings" },
+  { label: "Admin", icon: ShieldCheck, href: "/admin", adminOnly: true },
 ]
 
 export default function Sidebar() {
@@ -40,7 +42,9 @@ export default function Sidebar() {
       </div>
 
       <nav className="mt-7 space-y-1.5">
-        {navigationItems.map(({ label, icon: Icon, href, badge }) => {
+        {navigationItems.map(({ label, icon: Icon, href, badge, adminOnly }) => {
+          if (adminOnly && user?.role !== "admin") return null
+
           const isActive =
             href !== "#" &&
             (href === "/" ? pathname === "/" : pathname.startsWith(href))
